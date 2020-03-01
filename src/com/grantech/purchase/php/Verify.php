@@ -52,12 +52,30 @@
   $response = curl_exec($ch);
   $err = curl_error($ch);
   $jsonResponse = json_decode($response, true);
-  
-  $access_token = $jsonResponse['access_token'];
+  $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  curl_close($ch);
 
-  $result = file_get_contents("https://pardakht.cafebazaar.ir/api/validate/$package/inapp/$product/purchases/$tokenid/?access_token=$access_token");
+  if ($market == "cafebazaar" && $jsonResponse["purchaseState"]."null" == "null")
+    $status = 401;
+  else if ($market == "zarinpal" && $jsonResponse["Status"] < 100 )
+    $status = 401;
+  
+  $result->status = $status;
+  if( $status != 200 )
+  {
+    echo json_encode($result);
+    return;
+  }
+
+  if ($market == "zarinpal" )
+    $result->consumed = $jsonResponse["Status"] > 100 ? true : false; 
+  else if ($market == "cafebazaar" || $market == "ario")
+    $result->consumed = $jsonResponse["consumptionState"] == 1; 
+  else
+    $result->consumed = $jsonResponse["consumptionState"] == 0; 
     
-  echo $result;
+  if ($market != "zarinpal" )
+    $result->time = $jsonResponse["purchaseTime"];
       
-  curl_close($connection);
+  echo json_encode($result);
 ?>
