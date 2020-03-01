@@ -21,18 +21,18 @@ public class Verify {
 	static public final String MARKET_ZARINPAL = "zarinpal";
 
 	private int amount;
+	private String token;
 	private String market;
-	private String productId;
+	private String product;
 	private String packageName;
-	private String purchaseToken;
 	private Properties props = ConfigUtils.getInstance().load(ConfigUtils.DEFAULT);
 
-	public Verify(String packageName, String market, int amount, String productId, String purchaseToken) {
-		this.market = market;
+	public Verify(String packageName, String market, int amount, String product, String token) {
+		this.token = token;
 		this.amount = amount;
-		this.productId = productId;
+		this.market = market;
+		this.product = product;
 		this.packageName = packageName;
-		this.purchaseToken = purchaseToken;
 		this.perform();
 	}
 
@@ -52,7 +52,7 @@ public class Verify {
 			if (this.market.equals(MARKET_ZARINPAL)) {
 				result.put("response", data.json.getInt("Status"));
 				if (data.json.getInt("Status") == 100) {
-					this.purchaseToken = data.json.getString("RefID");
+					this.token = data.json.getString("RefID");
 					sendSuccessResult(0, 0, "", System.currentTimeMillis());
 				} else {
 					send(result);
@@ -172,7 +172,7 @@ public class Verify {
 			url = "https://www.zarinpal.com/pg/rest/WebGate/PaymentVerification.json";
 			List<NameValuePair> argus = new ArrayList<>();
 			argus.add(new BasicNameValuePair("MerchantID", props.getProperty("zarinpalMerchantID")));
-			argus.add(new BasicNameValuePair("Authority", purchaseToken));
+			argus.add(new BasicNameValuePair("Authority", token));
 			argus.add(new BasicNameValuePair("Amount", amount + ""));
 			HttpUtils.Data data = HttpUtils.post(url, argus, true, true);
 			System.out.print("verify " + data.statusCode + " " + data.text);
@@ -180,11 +180,11 @@ public class Verify {
 		}
 
 		if (this.market.equals(MARKET_MYKET))
-			url = "https://developer.myket.ir/api/applications/" + packageName + "/purchases/products/" + productId
-					+ "/tokens/" + purchaseToken;
+			url = "https://developer.myket.ir/api/applications/" + packageName + "/purchases/products/" + product
+					+ "/tokens/" + token;
 		else if (this.market.equals(MARKET_CAFEBAZAAR))
-			url = "https://pardakht.cafebazaar.ir/devapi/v2/api/validate/" + packageName + "/inapp/" + productId
-					+ "/purchases/" + purchaseToken + "/?access_token=" + props.getProperty("cafebazaarAccessToken");
+			url = "https://pardakht.cafebazaar.ir/devapi/v2/api/validate/" + packageName + "/inapp/" + product
+					+ "/purchases/" + token + "/?access_token=" + props.getProperty("cafebazaarAccessToken");
 
 		// system.out.print("purchase url:", url);
 		HttpUtils.Data data = HttpUtils.get(url, headers, true);
